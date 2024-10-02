@@ -1,4 +1,4 @@
-Spine.Slot = function(slotData, skeleton, bone) {
+var Slot = function(slotData, skeleton, bone) {
     this.slotData = slotData;
     this.skeleton = skeleton;
     this.bone = bone;
@@ -17,7 +17,7 @@ Spine.Slot = function(slotData, skeleton, bone) {
     this.setToBindPose();
 };
 
-Spine.Slot.prototype = {
+Slot.prototype = {
     destroy: function() {},
 
     setAttachment: function(attachment) {
@@ -48,3 +48,5 @@ Spine.Slot.prototype = {
         }
     }
 };
+
+module.exports = Slot

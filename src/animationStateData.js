@@ -1,9 +1,9 @@
-Spine.AnimationStateData = function(skeletonData) {
+var AnimationStateData = function(skeletonData) {
     this._skeletonData = skeletonData;
     this._animationToMixTime = {};
 };
 
-Spine.AnimationStateData.prototype = {
+AnimationStateData.prototype = {
     destroy: function() {},
 
     getSkeletonData: function() {
@@ -39,3 +39,5 @@ Spine.AnimationStateData.prototype = {
         return 0;
     }
 };
+
+module.exports = AnimationStateData

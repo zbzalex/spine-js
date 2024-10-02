@@ -1,9 +1,9 @@
-Spine.Skin = function(name) {
+Skin = function(name) {
     this.name = name;
     this._attachments = {};
 };
 
-Spine.Skin.prototype = {
+Skin.prototype = {
     destroy: function() {
         for(var key in this._attachments) {
             this._attachments[key].destroy();
@@ -35,3 +35,5 @@ Spine.Skin.prototype = {
         }
     }
 };
+
+module.exports = Skin

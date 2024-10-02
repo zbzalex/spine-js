@@ -1,35 +1,47 @@
-Spine.SkeletonJson = function(attachmentResolver) {
+var xhr = require("./xhr")
+var SkeletonData = require("./skeletonData")
+var Skin = require("./skin")
+var RegionAttachment = require("./attachment")
+var { Animation,
+    CurveTimeline,
+    RotateTimeline,
+    TranslateTimeline,
+    ScaleTimeline,
+    ColorTimeline,
+    AttachmentTimeline } = require("./animation")
+
+var SkeletonJson = function (attachmentResolver) {
     this._attachmentResolver = attachmentResolver;
     this._scale = 1;
     this._yDown = true;
 };
 
-Spine.SkeletonJson.prototype = {
-    destroy: function() {
+SkeletonJson.prototype = {
+    destroy: function () {
         this._attachmentResolver.destroy();
         this._attachmentResolver = null;
     },
 
-    setScale: function(scale) {
+    setScale: function (scale) {
         this._scale = scale;
     },
 
-    readSkeletonData: function(jsonFile, successCallback) {
+    readSkeletonData: function (jsonFile, successCallback) {
         var that = this;
 
-        Spine.SendXhrRequest({url: jsonFile}, function(value) {
+        xhr.SendXhrRequest({ url: jsonFile }, function (value) {
             var parsed = JSON.parse(value),
                 i, j, k, n;
 
-            var skeletonData = new Spine.SkeletonData();
+            var skeletonData = new SkeletonData();
 
             // bones
             var bonesData = parsed['bones'],
                 bone;
-            if(bonesData) {
+            if (bonesData) {
                 skeletonData.bones = new Array(bonesData.length);
 
-                for(i=0,n=bonesData.length; i<n; ++i) {
+                for (i = 0, n = bonesData.length; i < n; ++i) {
                     bone = {
                         name: bonesData[i]['name'],
                         parent: null,
@@ -43,9 +55,9 @@ Spine.SkeletonJson.prototype = {
                     };
 
                     var parentName = bonesData[i]['parent'];
-                    if(parentName) {
+                    if (parentName) {
                         bone.parent = skeletonData.findBone(parentName);
-                        if(!bone.parent) {
+                        if (!bone.parent) {
                             console.error("Parent bone not found: " + parentName);
                         }
                     }
@@ -56,9 +68,9 @@ Spine.SkeletonJson.prototype = {
             // slots
             var slotsData = parsed['slots'],
                 slot;
-            if(slotsData) {
+            if (slotsData) {
                 skeletonData.slots = new Array(slotsData.length);
-                for(i=0,n=slotsData.length; i<n; ++i) {
+                for (i = 0, n = slotsData.length; i < n; ++i) {
                     slot = {
                         name: slotsData[i]['name'],
                         bone: null,
@@ -70,7 +82,7 @@ Spine.SkeletonJson.prototype = {
                     };
 
                     var color = slotsData[i]['color'];
-                    if(color) {
+                    if (color) {
                         slot.r = that._toColor(color, 0);
                         slot.g = that._toColor(color, 1);
                         slot.b = that._toColor(color, 2);
@@ -78,9 +90,9 @@ Spine.SkeletonJson.prototype = {
                     }
 
                     var boneName = slotsData[i]['bone'];
-                    if(boneName) {
+                    if (boneName) {
                         slot.bone = skeletonData.findBone(boneName);
-                        if(!slot.bone) {
+                        if (!slot.bone) {
                             console.error("Slot bone not found: " + boneName);
                         }
                     }
@@ -93,21 +105,21 @@ Spine.SkeletonJson.prototype = {
             var skinsData = parsed['skins'],
                 skin,
                 attachmentsData, attachment;
-            if(skinsData) {
+            if (skinsData) {
                 skeletonData.skins = new Array(skinsData.length);
 
-                for(i in skinsData) {
-                    skin = new Spine.Skin(i);
+                for (i in skinsData) {
+                    skin = new Skin(i);
 
                     slotsData = skinsData[i];
-                    for(j in slotsData) {
+                    for (j in slotsData) {
                         var slotIndex = skeletonData.findSlotIndex(j);
 
                         attachmentsData = slotsData[j];
-                        for(k in attachmentsData) {
+                        for (k in attachmentsData) {
                             var attachmentMap = attachmentsData[k];
 
-                            attachment = new Spine.RegionAttachment(k, that._attachmentResolver);
+                            attachment = new RegionAttachment(k, that._attachmentResolver);
                             attachment.x = (attachmentMap['x'] || 0) * that._scale;
                             attachment.y = (attachmentMap['y'] || 0) * that._scale;
                             attachment.scaleX = (attachmentMap['scaleX'] || 1) * that._scale;
@@ -121,14 +133,14 @@ Spine.SkeletonJson.prototype = {
                     }
 
                     skeletonData.skins.push(skin);
-                    if(i == 'default') skeletonData.defaultSkin = skin;
+                    if (i == 'default') skeletonData.defaultSkin = skin;
                 }
             }
 
             // animations
             var animationsMap = parsed['animations'];
-            if(animationsMap) {
-                for(i in animationsMap) {
+            if (animationsMap) {
+                for (i in animationsMap) {
                     that._readAnimation(i, animationsMap[i], skeletonData);
                 }
             }
@@ -137,12 +149,12 @@ Spine.SkeletonJson.prototype = {
         });
     },
 
-    _readAnimation: function(animKey, animValue, skeletonData) {
-        var TIMELINE_SCALE       = "scale",
-            TIMELINE_ROTATE      = "rotate",
-            TIMELINE_TRANSLATE   = "translate",
-            TIMELINE_ATTACHMENT  = "attachment",
-            TIMELINE_COLOR       = "color";
+    _readAnimation: function (animKey, animValue, skeletonData) {
+        var TIMELINE_SCALE = "scale",
+            TIMELINE_ROTATE = "rotate",
+            TIMELINE_TRANSLATE = "translate",
+            TIMELINE_ATTACHMENT = "attachment",
+            TIMELINE_COLOR = "color";
 
         var timelines = [],
             duration = 0;
@@ -152,38 +164,38 @@ Spine.SkeletonJson.prototype = {
 
         var bonesData = animValue['bones'],
             boneName, boneIndex;
-        if(bonesData) {
-            for(boneName in bonesData) {
+        if (bonesData) {
+            for (boneName in bonesData) {
                 boneIndex = skeletonData.findBoneIndex(boneName);
-                if(boneIndex < 0) throw 'Bone not found: ' + boneName;
+                if (boneIndex < 0) throw 'Bone not found: ' + boneName;
 
                 timelineMap = bonesData[boneName];
-                for(timelineName in timelineMap) {
+                for (timelineName in timelineMap) {
                     timelineValues = timelineMap[timelineName];
 
                     // Rotate
                     if (timelineName == TIMELINE_ROTATE) {
-                        timeline = new Spine.RotateTimeline(timelineValues.length);
+                        timeline = new RotateTimeline(timelineValues.length);
                         timeline.boneIndex = boneIndex;
 
-                        for(i=0,n=timelineValues.length; i<n; ++i) {
+                        for (i = 0, n = timelineValues.length; i < n; ++i) {
                             valueMap = timelineValues[i];
 
                             timeline.setKeyframe(i, valueMap['time'], valueMap['angle']);
                             this._readCurve(timeline, i, valueMap);
                         }
                     }
-                    else if(timelineName == TIMELINE_TRANSLATE || timelineName == TIMELINE_SCALE) {
+                    else if (timelineName == TIMELINE_TRANSLATE || timelineName == TIMELINE_SCALE) {
                         var timelineScale = 1;
-                        if(timelineName == TIMELINE_TRANSLATE)
-                            timeline = new Spine.TranslateTimeline(timelineValues.length);
+                        if (timelineName == TIMELINE_TRANSLATE)
+                            timeline = new TranslateTimeline(timelineValues.length);
                         else {
-                            timeline = new Spine.ScaleTimeline(timelineValues.length);
+                            timeline = new ScaleTimeline(timelineValues.length);
                             timelineScale = this._scale;
                         }
                         timeline.boneIndex = boneIndex;
 
-                        for(i=0,n=timelineValues.length; i<n; ++i) {
+                        for (i = 0, n = timelineValues.length; i < n; ++i) {
                             valueMap = timelineValues[i];
 
                             timeline.setKeyframe(i,
@@ -199,7 +211,7 @@ Spine.SkeletonJson.prototype = {
                     }
 
                     timelines.push(timeline);
-                    if(timeline.getDuration() > duration)
+                    if (timeline.getDuration() > duration)
                         duration = timeline.getDuration();
                 }
             }
@@ -207,20 +219,20 @@ Spine.SkeletonJson.prototype = {
 
         var slotsData = animValue['slots'],
             slotName, slotIndex;
-        if(slotsData) {
-            for(slotName in slotsData) {
+        if (slotsData) {
+            for (slotName in slotsData) {
                 slotIndex = skeletonData.findSlotIndex(slotName);
-                if(slotIndex < 0) throw 'Slot not found: ' + slotName;
+                if (slotIndex < 0) throw 'Slot not found: ' + slotName;
 
                 timelineMap = slotsData[slotName];
-                for(timelineName in timelineMap) {
+                for (timelineName in timelineMap) {
                     timelineValues = timelineMap[timelineName];
 
-                    if(timelineName == TIMELINE_COLOR) {
-                        timeline = new Spine.ColorTimeline(timelineValues.length);
+                    if (timelineName == TIMELINE_COLOR) {
+                        timeline = new ColorTimeline(timelineValues.length);
                         timeline.slotIndex = slotIndex;
 
-                        for(i=0,n=timelineValues.length; i<n; ++i) {
+                        for (i = 0, n = timelineValues.length; i < n; ++i) {
                             valueMap = timelineValues[i];
 
                             var color = valueMap['color'];
@@ -234,11 +246,11 @@ Spine.SkeletonJson.prototype = {
                             this._readCurve(timeline, i, valueMap);
                         }
                     }
-                    else if(timelineName == TIMELINE_ATTACHMENT) {
-                        timeline = new Spine.AttachmentTimeline(timelineValues.length);
+                    else if (timelineName == TIMELINE_ATTACHMENT) {
+                        timeline = new AttachmentTimeline(timelineValues.length);
                         timeline.slotIndex = slotIndex;
 
-                        for(i=0,n=timelineValues.length; i<n; ++i) {
+                        for (i = 0, n = timelineValues.length; i < n; ++i) {
                             valueMap = timelineValues[i];
 
                             timeline.setKeyframe(i,
@@ -252,30 +264,32 @@ Spine.SkeletonJson.prototype = {
                     }
 
                     timelines.push(timeline);
-                    if(timeline.getDuration() > duration)
+                    if (timeline.getDuration() > duration)
                         duration = timeline.getDuration();
                 }
             }
         }
 
-        skeletonData.animations.push(new Spine.Animation(animKey, timelines, duration));
+        skeletonData.animations.push(new Animation(animKey, timelines, duration));
     },
 
-    _readCurve: function(timeline, keyframeIndex, valueMap) {
+    _readCurve: function (timeline, keyframeIndex, valueMap) {
         var curve = valueMap['curve'];
-        if(!curve) return;
+        if (!curve) return;
 
-        if(curve == 'stepped') {
+        if (curve == 'stepped') {
             timeline.setStepped(keyframeIndex);
         }
-        else if(Array.isArray(curve)) {
+        else if (Array.isArray(curve)) {
             timeline.setCurve(keyframeIndex, curve[0], curve[1], curve[2], curve[3]);
         }
     },
 
-    _toColor: function(value, index) {
-        if(value.length != 8) throw "Error parsing color, length must be 8: " + value;
-        var color = parseInt(value.substr(index*2,2), 16);
+    _toColor: function (value, index) {
+        if (value.length != 8) throw "Error parsing color, length must be 8: " + value;
+        var color = parseInt(value.substr(index * 2, 2), 16);
         return color / 255;
     }
 };
+
+module.exports = SkeletonJson

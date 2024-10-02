@@ -1,4 +1,4 @@
-Spine.SendXhrRequest = function(options, successCallback, errorCallback) {
+var SendXhrRequest = function(options, successCallback, errorCallback) {
     var req = new XMLHttpRequest();
 
     req.open(options.method || 'GET', options.url, true);
@@ -16,3 +16,7 @@ Spine.SendXhrRequest = function(options, successCallback, errorCallback) {
 
     req.send(options.data || null);
 };
+
+module.exports = {
+    SendXhrRequest
+}

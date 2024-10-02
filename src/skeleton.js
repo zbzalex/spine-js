@@ -1,4 +1,7 @@
-Spine.Skeleton = function(skeletonData) {
+var Bone = require("./bone")
+var Slot = require("./slot")
+
+var Skeleton = function(skeletonData) {
     this.skeletonData = skeletonData;
     this.bones = [];
     this.slots = [];
@@ -18,7 +21,7 @@ Spine.Skeleton = function(skeletonData) {
     this.bones = new Array(boneCount);
     for(i=0; i<boneCount; ++i) {
         boneData = skeletonData.bones[i];
-        bone = new Spine.Bone(boneData);
+        bone = new Bone(boneData);
 
         if(boneData.parent) {
             for(ii=0; ii < boneCount; ++ii) {
@@ -45,13 +48,13 @@ Spine.Skeleton = function(skeletonData) {
                 break;
             }
         }
-        slot = new Spine.Slot(slotData, this, bone);
+        slot = new Slot(slotData, this, bone);
         this.slots[i] = slot;
         this.drawOrder[i] = slot;
     }
 };
 
-Spine.Skeleton.prototype = {
+Skeleton.prototype = {
     destroy: function() {
         var i, n;
         for(i=0, n=this.bones.length; i<n; ++i) {
@@ -170,7 +173,7 @@ Spine.Skeleton.prototype = {
         throw "Slot not found: " + slotName;
     },
 
-    draw: function(context) {
+    draw: function(context, debug = false) {
         var attachment;
         for(i=0, n=this.drawOrder.length; i<n; ++i) {
             attachment = this.drawOrder[i].attachment;
@@ -179,7 +182,7 @@ Spine.Skeleton.prototype = {
             }
         }
 
-        if(Spine._DEBUG_) {
+        if(debug) {
 
             for(var j=0, m=this.bones.length; j<m; ++j) {
 
@@ -204,3 +207,5 @@ Spine.Skeleton.prototype = {
         }
     }
 };
+
+module.exports = Skeleton

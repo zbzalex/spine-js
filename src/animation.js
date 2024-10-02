@@ -1,10 +1,12 @@
-Spine.Animation = function(name, timelines, duration) {
+var { binarySearch } = require("./utils")
+
+var Animation = function(name, timelines, duration) {
     this.name = name;
     this.timelines = timelines;
     this.duration = duration * 1000; // convert in ms
 };
 
-Spine.Animation.prototype = {
+Animation.prototype = {
     destroy: function() {
         for(var i=0, n=this.timelines.length; i<n; ++i) {
             this.timelines[i].destroy();
@@ -113,33 +115,13 @@ CurveTimeline.prototype = {
     }
 };
 
-/** @param target After the first and before the last entry. */
-function binarySearch(values, valuesLength, target, step) {
-    var low = 0,
-        high = valuesLength / step - 2;
-
-    if(high === 0) return step;
-
-    var current = high >> 1;
-    while(true) {
-        if(values[(current + 1) * step] <= target)
-            low = current + 1;
-        else
-            high = current;
-
-        if(low == high) return (low + 1) * step;
-        current = (low + high) >> 1;
-    }
-    return 0;
-}
-
 //
 // Rotate Timeline
 //
 var ROTATE_LAST_FRAME_TIME = -2;
 var ROTATE_FRAME_VALUE = 1;
 
-Spine.RotateTimeline = function(keyframeCount) {
+var RotateTimeline = function(keyframeCount) {
     CurveTimeline.call(this, keyframeCount);
 
     this.framesLength = keyframeCount * 2;
@@ -147,26 +129,26 @@ Spine.RotateTimeline = function(keyframeCount) {
     this.boneIndex = 0;
 };
 
-Spine.RotateTimeline.prototype = Object.create(CurveTimeline.prototype);
+RotateTimeline.prototype = Object.create(CurveTimeline.prototype);
 
-Spine.RotateTimeline.prototype.destroy = function() {
+RotateTimeline.prototype.destroy = function() {
     this.curves = null;
     this.frames = null;
 };
 
-Spine.RotateTimeline.prototype.getDuration = function() {
+RotateTimeline.prototype.getDuration = function() {
     return this.frames[this.framesLength - 2];
 };
-Spine.RotateTimeline.prototype.getKeyFrameCount = function() {
+RotateTimeline.prototype.getKeyFrameCount = function() {
     return this.framesLength / 2;
 };
-Spine.RotateTimeline.prototype.setKeyframe = function(keyframeIndex, time, value) {
+RotateTimeline.prototype.setKeyframe = function(keyframeIndex, time, value) {
     keyframeIndex *= 2;
     this.frames[keyframeIndex] = time;
     this.frames[keyframeIndex + 1] = value;
 };
 
-Spine.RotateTimeline.prototype.apply = function(skeleton, time, alpha) {
+RotateTimeline.prototype.apply = function(skeleton, time, alpha) {
     if(time < this.frames[0]) return; // Time is before first frame.
 
     var bone = skeleton.bones[this.boneIndex],
@@ -215,7 +197,7 @@ var TRANSLATE_LAST_FRAME_TIME = -3;
 var TRANSLATE_FRAME_X = 1;
 var TRANSLATE_FRAME_Y = 2;
 
-Spine.TranslateTimeline = function(keyframeCount) {
+var TranslateTimeline = function(keyframeCount) {
     CurveTimeline.call(this, keyframeCount);
 
     this.framesLength = keyframeCount * 3;
@@ -223,27 +205,27 @@ Spine.TranslateTimeline = function(keyframeCount) {
     this.boneIndex = 0;
 };
 
-Spine.TranslateTimeline.prototype = Object.create(CurveTimeline.prototype);
+TranslateTimeline.prototype = Object.create(CurveTimeline.prototype);
 
-Spine.TranslateTimeline.prototype.destroy = function() {
+TranslateTimeline.prototype.destroy = function() {
     this.curves = null;
     this.frames = null;
 };
 
-Spine.TranslateTimeline.prototype.getDuration = function() {
+TranslateTimeline.prototype.getDuration = function() {
     return this.frames[this.framesLength - 3];
 };
-Spine.TranslateTimeline.prototype.getKeyFrameCount = function() {
+TranslateTimeline.prototype.getKeyFrameCount = function() {
     return this.framesLength / 3;
 };
-Spine.TranslateTimeline.prototype.setKeyframe = function(keyframeIndex, time, x, y) {
+TranslateTimeline.prototype.setKeyframe = function(keyframeIndex, time, x, y) {
     keyframeIndex *= 3;
     this.frames[keyframeIndex] = time;
     this.frames[keyframeIndex + 1] = x;
     this.frames[keyframeIndex + 2] = y;
 };
 
-Spine.TranslateTimeline.prototype.apply = function(skeleton, time, alpha) {
+TranslateTimeline.prototype.apply = function(skeleton, time, alpha) {
     if(time < this.frames[0]) return; // Time is before first frame.
 
     var bone = skeleton.bones[this.boneIndex];
@@ -273,13 +255,13 @@ Spine.TranslateTimeline.prototype.apply = function(skeleton, time, alpha) {
 //
 // Scale Timeline
 //
-Spine.ScaleTimeline = function(keyframeCount) {
-    Spine.TranslateTimeline.call(this, keyframeCount);
+var ScaleTimeline = function(keyframeCount) {
+    TranslateTimeline.call(this, keyframeCount);
 };
 
-Spine.ScaleTimeline.prototype = Object.create(Spine.TranslateTimeline.prototype);
+ScaleTimeline.prototype = Object.create(TranslateTimeline.prototype);
 
-Spine.ScaleTimeline.prototype.apply = function(skeleton, time, alpha) {
+ScaleTimeline.prototype.apply = function(skeleton, time, alpha) {
     if(time < this.frames[0]) return; // Time is before first frame.
 
     var bone = skeleton.bones[this.boneIndex];
@@ -316,7 +298,7 @@ var COLOR_FRAME_G = 2;
 var COLOR_FRAME_B = 3;
 var COLOR_FRAME_A = 4;
 
-Spine.ColorTimeline = function(keyframeCount) {
+var ColorTimeline = function(keyframeCount) {
     CurveTimeline.call(this, keyframeCount);
 
     this.framesLength = keyframeCount * 5;
@@ -324,20 +306,20 @@ Spine.ColorTimeline = function(keyframeCount) {
     this.slotIndex = 0;
 };
 
-Spine.ColorTimeline.prototype = Object.create(CurveTimeline.prototype);
+ColorTimeline.prototype = Object.create(CurveTimeline.prototype);
 
-Spine.ColorTimeline.prototype.destroy = function() {
+ColorTimeline.prototype.destroy = function() {
     this.curves = null;
     this.frames = null;
 };
 
-Spine.ColorTimeline.prototype.getDuration = function() {
+ColorTimeline.prototype.getDuration = function() {
     return this.frames[this.framesLength - 5];
 };
-Spine.ColorTimeline.prototype.getKeyFrameCount = function() {
+ColorTimeline.prototype.getKeyFrameCount = function() {
     return this.framesLength / 5;
 };
-Spine.ColorTimeline.prototype.setKeyframe = function(keyframeIndex, time, r, g, b, a) {
+ColorTimeline.prototype.setKeyframe = function(keyframeIndex, time, r, g, b, a) {
     keyframeIndex *= 5;
     this.frames[keyframeIndex] = time;
     this.frames[keyframeIndex + 1] = r;
@@ -346,7 +328,7 @@ Spine.ColorTimeline.prototype.setKeyframe = function(keyframeIndex, time, r, g, 
     this.frames[keyframeIndex + 4] = a;
 };
 
-Spine.ColorTimeline.prototype.apply = function(skeleton, time, alpha) {
+ColorTimeline.prototype.apply = function(skeleton, time, alpha) {
     if(time < this.frames[0]) return; // Time is before first frame.
 
     var slot = skeleton.slots[this.slotIndex];
@@ -397,14 +379,14 @@ Spine.ColorTimeline.prototype.apply = function(skeleton, time, alpha) {
 //
 // Attachment Timeline
 //
-Spine.AttachmentTimeline = function(keyframeCount) {
+var AttachmentTimeline = function(keyframeCount) {
     this.framesLength = keyframeCount;
     this.frames = new Float32Array(this.framesLength);  // time, ...
     this.attachmentNames = [];
     this.slotIndex = 0;
 };
 
-Spine.AttachmentTimeline.prototype = {
+AttachmentTimeline.prototype = {
     destroy: function() {
         this.frames = null;
     },
@@ -435,3 +417,13 @@ Spine.AttachmentTimeline.prototype = {
         skeleton.slots[this.slotIndex].setAttachment(attachmentName ? skeleton.getAttachmentByIndex(this.slotIndex, attachmentName) : null);
     }
 };
+
+module.exports = {
+    Animation,
+    CurveTimeline,
+    RotateTimeline,
+    TranslateTimeline,
+    ScaleTimeline,
+    ColorTimeline,
+    AttachmentTimeline,
+}

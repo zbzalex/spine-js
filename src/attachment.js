@@ -1,4 +1,4 @@
-Spine.RegionAttachment = function(name, attachmentResolver) {
+var RegionAttachment = function(name, attachmentResolver) {
     this.name = name;
     this._attachmentResolver = attachmentResolver;
     this.x = 0;
@@ -19,7 +19,7 @@ Spine.RegionAttachment = function(name, attachmentResolver) {
     this._alpha = null;
 };
 
-Spine.RegionAttachment.prototype = {
+RegionAttachment.prototype = {
     destroy: function() {},
 
     updateWorldTransform: function(flipX, flipY, slot) {
@@ -63,3 +63,5 @@ Spine.RegionAttachment.prototype = {
     }
 
 };
+
+module.exports = RegionAttachment

@@ -1,4 +1,4 @@
-Spine.Bone = function(boneData) {
+var Bone = function(boneData) {
     this.boneData = boneData;
     this.parent = null;
     this.x = boneData.x;
@@ -21,7 +21,7 @@ Spine.Bone = function(boneData) {
 
 };
 
-Spine.Bone.prototype = {
+Bone.prototype = {
     destroy: function() {},
 
     setToBindPose: function() {
@@ -71,3 +71,5 @@ Spine.Bone.prototype = {
         }
     }
 };
+
+module.exports = Bone

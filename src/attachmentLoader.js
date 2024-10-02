@@ -1,9 +1,9 @@
-Spine.AttachmentLoader = function(path) {
+var AttachmentLoader = function(path) {
     this._path = path;
     this._images = {};
 };
 
-Spine.AttachmentLoader.prototype = {
+AttachmentLoader.prototype = {
     destroy: function() {
         for(var i in this._images) {
             this._images[i] = null;
@@ -26,3 +26,5 @@ Spine.AttachmentLoader.prototype = {
     }
 
 };
+
+module.exports = AttachmentLoader

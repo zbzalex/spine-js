@@ -1,4 +1,4 @@
-Spine.SkeletonData = function() {
+var SkeletonData = function() {
     this.bones = [];
     this.slots = [];
     this.skins = [];
@@ -6,7 +6,7 @@ Spine.SkeletonData = function() {
     this.defaultSkin = null;
 };
 
-Spine.SkeletonData.prototype = {
+SkeletonData.prototype = {
     findBone: function(boneName) {
         var idx = this.findBoneIndex(boneName);
         if(idx < 0) return null;
@@ -49,3 +49,5 @@ Spine.SkeletonData.prototype = {
         return null;
     }
 };
+
+module.exports = SkeletonData

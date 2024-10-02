@@ -1,4 +1,4 @@
-Spine.AnimationState = function(data) {
+var AnimationState = function(data) {
     if(!data) throw "data cannot be null";
     this._data = data;
 
@@ -15,7 +15,7 @@ Spine.AnimationState = function(data) {
     this.mixDuration = 0;
 };
 
-Spine.AnimationState.prototype = {
+AnimationState.prototype = {
     destroy: function() {},
 
     update: function(delta) {
@@ -73,3 +73,5 @@ Spine.AnimationState.prototype = {
         return this.currentTime;
     }
 };
+
+module.exports = AnimationState
