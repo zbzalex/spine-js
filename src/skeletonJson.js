@@ -8,7 +8,8 @@ var { Animation,
     TranslateTimeline,
     ScaleTimeline,
     ColorTimeline,
-    AttachmentTimeline } = require("./animation")
+    AttachmentTimeline
+} = require("./animation")
 
 var SkeletonJson = function (attachmentResolver) {
     this._attachmentResolver = attachmentResolver;
@@ -26,127 +27,121 @@ SkeletonJson.prototype = {
         this._scale = scale;
     },
 
-    readSkeletonData: function (jsonFile, successCallback) {
-        var that = this;
+    readSkeletonData: function (parsed) {
+        var i, j, k, n;
+        var skeletonData = new SkeletonData();
+        
+        // bones
+        var bonesData = parsed['bones'],
+            bone;
+        if (bonesData) {
+            skeletonData.bones = new Array(bonesData.length);
 
-        xhr.SendXhrRequest({ url: jsonFile }, function (value) {
-            var parsed = JSON.parse(value),
-                i, j, k, n;
+            for (i = 0, n = bonesData.length; i < n; ++i) {
+                bone = {
+                    name: bonesData[i]['name'],
+                    parent: null,
+                    length: (bonesData[i]['length'] || 0) * this._scale,
+                    x: (bonesData[i]['x'] || 0) * this._scale,
+                    y: (bonesData[i]['y'] || 0) * this._scale,
+                    scaleX: bonesData[i]['scaleX'] || 1,
+                    scaleY: bonesData[i]['scaleY'] || 1,
+                    rotation: bonesData[i]['rotation'] || 0,
+                    yDown: this._yDown
+                };
 
-            var skeletonData = new SkeletonData();
-
-            // bones
-            var bonesData = parsed['bones'],
-                bone;
-            if (bonesData) {
-                skeletonData.bones = new Array(bonesData.length);
-
-                for (i = 0, n = bonesData.length; i < n; ++i) {
-                    bone = {
-                        name: bonesData[i]['name'],
-                        parent: null,
-                        length: (bonesData[i]['length'] || 0) * that._scale,
-                        x: (bonesData[i]['x'] || 0) * that._scale,
-                        y: (bonesData[i]['y'] || 0) * that._scale,
-                        scaleX: bonesData[i]['scaleX'] || 1,
-                        scaleY: bonesData[i]['scaleY'] || 1,
-                        rotation: bonesData[i]['rotation'] || 0,
-                        yDown: that._yDown
-                    };
-
-                    var parentName = bonesData[i]['parent'];
-                    if (parentName) {
-                        bone.parent = skeletonData.findBone(parentName);
-                        if (!bone.parent) {
-                            console.error("Parent bone not found: " + parentName);
-                        }
+                var parentName = bonesData[i]['parent'];
+                if (parentName) {
+                    bone.parent = skeletonData.findBone(parentName);
+                    if (!bone.parent) {
+                        console.error("Parent bone not found: " + parentName);
                     }
-                    skeletonData.bones[i] = bone;
                 }
+                skeletonData.bones[i] = bone;
             }
+        }
 
-            // slots
-            var slotsData = parsed['slots'],
-                slot;
-            if (slotsData) {
-                skeletonData.slots = new Array(slotsData.length);
-                for (i = 0, n = slotsData.length; i < n; ++i) {
-                    slot = {
-                        name: slotsData[i]['name'],
-                        bone: null,
-                        r: 1,
-                        g: 1,
-                        b: 1,
-                        a: 1,
-                        attachmentName: slotsData[i]['attachment'] || ''
-                    };
+        // slots
+        var slotsData = parsed['slots'],
+            slot;
+        if (slotsData) {
+            skeletonData.slots = new Array(slotsData.length);
+            for (i = 0, n = slotsData.length; i < n; ++i) {
+                slot = {
+                    name: slotsData[i]['name'],
+                    bone: null,
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                    a: 1,
+                    attachmentName: slotsData[i]['attachment'] || ''
+                };
 
-                    var color = slotsData[i]['color'];
-                    if (color) {
-                        slot.r = that._toColor(color, 0);
-                        slot.g = that._toColor(color, 1);
-                        slot.b = that._toColor(color, 2);
-                        slot.a = that._toColor(color, 3);
+                var color = slotsData[i]['color'];
+                if (color) {
+                    slot.r = this._toColor(color, 0);
+                    slot.g = this._toColor(color, 1);
+                    slot.b = this._toColor(color, 2);
+                    slot.a = this._toColor(color, 3);
+                }
+
+                var boneName = slotsData[i]['bone'];
+                if (boneName) {
+                    slot.bone = skeletonData.findBone(boneName);
+                    if (!slot.bone) {
+                        console.error("Slot bone not found: " + boneName);
                     }
+                }
 
-                    var boneName = slotsData[i]['bone'];
-                    if (boneName) {
-                        slot.bone = skeletonData.findBone(boneName);
-                        if (!slot.bone) {
-                            console.error("Slot bone not found: " + boneName);
-                        }
+                skeletonData.slots[i] = slot;
+            }
+        }
+
+        // skins
+        var skinsData = parsed['skins'],
+            skin,
+            attachmentsData, attachment;
+        if (skinsData) {
+            skeletonData.skins = new Array(skinsData.length);
+
+            for (i in skinsData) {
+                skin = new Skin(i);
+
+                slotsData = skinsData[i];
+                for (j in slotsData) {
+                    var slotIndex = skeletonData.findSlotIndex(j);
+
+                    attachmentsData = slotsData[j];
+                    for (k in attachmentsData) {
+                        var attachmentMap = attachmentsData[k];
+
+                        attachment = new RegionAttachment(k, this._attachmentResolver);
+                        attachment.x = (attachmentMap['x'] || 0) * this._scale;
+                        attachment.y = (attachmentMap['y'] || 0) * this._scale;
+                        attachment.scaleX = (attachmentMap['scaleX'] || 1) * this._scale;
+                        attachment.scaleY = (attachmentMap['scaleY'] || 1) * this._scale;
+                        attachment.rotation = attachmentMap['rotation'] || 0;
+                        attachment.width = (attachmentMap['width'] || 32) * this._scale;
+                        attachment.height = (attachmentMap['height'] || 32) * this._scale;
+
+                        skin.addAttachment(slotIndex, k, attachment);
                     }
-
-                    skeletonData.slots[i] = slot;
                 }
+
+                skeletonData.skins.push(skin);
+                if (i == 'default') skeletonData.defaultSkin = skin;
             }
+        }
 
-            // skins
-            var skinsData = parsed['skins'],
-                skin,
-                attachmentsData, attachment;
-            if (skinsData) {
-                skeletonData.skins = new Array(skinsData.length);
-
-                for (i in skinsData) {
-                    skin = new Skin(i);
-
-                    slotsData = skinsData[i];
-                    for (j in slotsData) {
-                        var slotIndex = skeletonData.findSlotIndex(j);
-
-                        attachmentsData = slotsData[j];
-                        for (k in attachmentsData) {
-                            var attachmentMap = attachmentsData[k];
-
-                            attachment = new RegionAttachment(k, that._attachmentResolver);
-                            attachment.x = (attachmentMap['x'] || 0) * that._scale;
-                            attachment.y = (attachmentMap['y'] || 0) * that._scale;
-                            attachment.scaleX = (attachmentMap['scaleX'] || 1) * that._scale;
-                            attachment.scaleY = (attachmentMap['scaleY'] || 1) * that._scale;
-                            attachment.rotation = attachmentMap['rotation'] || 0;
-                            attachment.width = (attachmentMap['width'] || 32) * that._scale;
-                            attachment.height = (attachmentMap['height'] || 32) * that._scale;
-
-                            skin.addAttachment(slotIndex, k, attachment);
-                        }
-                    }
-
-                    skeletonData.skins.push(skin);
-                    if (i == 'default') skeletonData.defaultSkin = skin;
-                }
+        // animations
+        var animationsMap = parsed['animations'];
+        if (animationsMap) {
+            for (i in animationsMap) {
+                this._readAnimation(i, animationsMap[i], skeletonData);
             }
-
-            // animations
-            var animationsMap = parsed['animations'];
-            if (animationsMap) {
-                for (i in animationsMap) {
-                    that._readAnimation(i, animationsMap[i], skeletonData);
-                }
-            }
-
-            successCallback(skeletonData);
-        });
+        }
+        
+        return skeletonData
     },
 
     _readAnimation: function (animKey, animValue, skeletonData) {

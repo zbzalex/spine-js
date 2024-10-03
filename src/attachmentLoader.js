@@ -9,7 +9,7 @@ AttachmentLoader.prototype = {
             this._images[i] = null;
         }
     },
-
+    
     resolve: function(name) {
         var i = this._images[name];
         if(i) return i;
